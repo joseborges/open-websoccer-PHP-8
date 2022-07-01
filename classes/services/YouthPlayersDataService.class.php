@@ -3,19 +3,19 @@
 
   This file is part of OpenWebSoccer-Sim.
 
-  OpenWebSoccer-Sim is free software: you can redistribute it 
-  and/or modify it under the terms of the 
-  GNU Lesser General Public License 
+  OpenWebSoccer-Sim is free software: you can redistribute it
+  and/or modify it under the terms of the
+  GNU Lesser General Public License
   as published by the Free Software Foundation, either version 3 of
   the License, or any later version.
 
   OpenWebSoccer-Sim is distributed in the hope that it will be
   useful, but WITHOUT ANY WARRANTY; without even the implied
-  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
   See the GNU Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with OpenWebSoccer-Sim.  
+  You should have received a copy of the GNU Lesser General Public
+  License along with OpenWebSoccer-Sim.
   If not, see <http://www.gnu.org/licenses/>.
 
 ******************************************************/
@@ -24,11 +24,11 @@
  * Data service for youth players data management.
  */
 class YouthPlayersDataService {
-	
+
 	/**
 	 * Provides a youth player with specified ID. Throws an exception if player could not be found.
 	 * Query is cached.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param I18n $i18n Messages context.
@@ -38,38 +38,38 @@ class YouthPlayersDataService {
 	 */
 	public static function getYouthPlayerById(WebSoccer $websoccer, DbConnection $db, I18n $i18n, $playerId) {
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthplayer";
-		
+
 		$players = $db->queryCachedSelect("*", $fromTable, "id = %d", $playerId);
-		
+
 		if (!count($players)) {
 			throw new Exception($i18n->getMessage("error_page_not_found"));
 		}
-		
+
 		return $players[0];
 	}
-	
+
 	/**
 	 * Find all youth players of a specified team, ordered by position, last name and first name.
 	 * Query is cached.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param int $teamId ID of team.
 	 * @return array array of youth players or empty array if team has no youth players.
 	 */
 	public static function getYouthPlayersOfTeam(WebSoccer $websoccer, DbConnection $db, $teamId) {
-		
+
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthplayer";
 		$whereCondition = "team_id = %d ORDER BY position ASC, lastname ASC, firstname ASC";
-		
+
 		$players = $db->queryCachedSelect("*", $fromTable, $whereCondition, $teamId);
-		
+
 		return $players;
 	}
-	
+
 	/**
 	 * County outh players of a team.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param int $teamId ID of team
@@ -77,22 +77,22 @@ class YouthPlayersDataService {
 	 */
 	public static function countYouthPlayersOfTeam(WebSoccer $websoccer, DbConnection $db, $teamId) {
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthplayer";
-	
-	
+
+
 		$result = $db->querySelect("COUNT(*) AS hits", $fromTable, "team_id = %d", $teamId);
 		$players = $result->fetch_array();
 		$result->free();
-	
+
 		if ($players) {
 			return $players["hits"];
 		}
-	
+
 		return 0;
 	}
-	
+
 	/**
 	 * Provides the salary to pay per match for all youth players of a specified team.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param int $teamId ID of team
@@ -100,22 +100,22 @@ class YouthPlayersDataService {
 	 */
 	public static function computeSalarySumOfYouthPlayersOfTeam(WebSoccer $websoccer, DbConnection $db, $teamId) {
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthplayer";
-	
-	
+
+
 		$result = $db->querySelect("SUM(strength) AS strengthsum", $fromTable, "team_id = %d", $teamId);
 		$players = $result->fetch_array();
 		$result->free();
-	
+
 		if ($players) {
 			return $players["strengthsum"] * $websoccer->getConfig("youth_salary_per_strength");
 		}
-	
+
 		return 0;
 	}
-	
+
 	/**
 	 * Provides youth players of team, grouped by position.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param int $clubId ID of team
@@ -127,7 +127,7 @@ class YouthPlayersDataService {
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthplayer";
 		$whereCondition = "team_id = %d ORDER BY position ". $positionSort . ", lastname ASC, firstname ASC";
 		$result = $db->querySelect($columns, $fromTable, $whereCondition, $clubId, 50);
-	
+
 		$players = array();
 		while ($player = $result->fetch_array()) {
 			$player["position"] = PlayersDataService::_convertPosition($player["position"]);
@@ -136,13 +136,13 @@ class YouthPlayersDataService {
 			$players[$player["position"]][] = $player;
 		}
 		$result->free();
-	
+
 		return $players;
 	}
-	
+
 	/**
 	 * Provides number of youth players who are marked as transferable (i.e. having a transfer fee higher than 0).
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param string $positionFilter DB value of position to filter for.
@@ -150,29 +150,29 @@ class YouthPlayersDataService {
 	 */
 	public static function countTransferableYouthPlayers(WebSoccer $websoccer, DbConnection $db, $positionFilter = NULL) {
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthplayer";
-		
+
 		$parameters = "";
 		$whereCondition = "transfer_fee > 0";
-		
+
 		if ($positionFilter != NULL) {
 			$whereCondition .= " AND position = '%s'";
 			$parameters = $positionFilter;
 		}
-		
+
 		$result = $db->querySelect("COUNT(*) AS hits", $fromTable, $whereCondition, $parameters);
 		$players = $result->fetch_array();
 		$result->free();
-		
+
 		if ($players) {
 			return $players["hits"];
 		}
-		
+
 		return 0;
 	}
-	
+
 	/**
 	 * Provides youth players who are transferable.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param string|NULL $positionFilter DB value of position to filter for.
@@ -180,9 +180,9 @@ class YouthPlayersDataService {
 	 * @param int $entries_per_page Number of items to fetch.
 	 * @return array Array of players or empty array if no youth players found.
 	 */
-	public static function getTransferableYouthPlayers(WebSoccer $websoccer, DbConnection $db, $positionFilter = NULL,
-			$startIndex, $entries_per_page) {
-		
+	public static function getTransferableYouthPlayers(WebSoccer $websoccer, DbConnection $db, 
+			$startIndex, $entries_per_page, $positionFilter = NULL) {
+
 		$columns = array(
 				"P.id" => "player_id",
 				"P.firstname" => "firstname",
@@ -206,23 +206,23 @@ class YouthPlayersDataService {
 				"U.email" => "user_email",
 				"U.picture" => "user_picture"
 				);
-		
+
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthplayer AS P";
 		$fromTable .= " INNER JOIN " . $websoccer->getConfig("db_prefix") . "_verein AS C ON C.id = P.team_id";
 		$fromTable .= " LEFT JOIN " . $websoccer->getConfig("db_prefix") . "_user AS U ON U.id = C.user_id";
-		
+
 		$parameters = "";
 		$whereCondition = "P.transfer_fee > 0";
-		
+
 		if ($positionFilter != NULL) {
 			$whereCondition .= " AND P.position = '%s'";
 			$parameters = $positionFilter;
 		}
-		
+
 		$whereCondition .= " ORDER BY P.strength DESC";
-		
+
 		$players = array();
-		
+
 		$limit = $startIndex .",". $entries_per_page;
 		$result = $db->querySelect($columns, $fromTable, $whereCondition, $parameters, $limit);
 		while ($player = $result->fetch_array()) {
@@ -231,13 +231,13 @@ class YouthPlayersDataService {
 			$players[] = $player;
 		}
 		$result->free();
-		
+
 		return $players;
 	}
-	
+
 	/**
 	 * Provides a list of all available youth scouts.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param string $sortColumns ORDER BY part of query.
@@ -245,19 +245,19 @@ class YouthPlayersDataService {
 	 */
 	public static function getScouts(WebSoccer $websoccer, DbConnection $db, $sortColumns = "expertise DESC, name ASC") {
 		$result = $db->querySelect("*", $websoccer->getConfig("db_prefix") . "_youthscout", "1=1 ORDER BY " . $sortColumns);
-		
+
 		$scouts = array();
 		while ($scout = $result->fetch_array()) {
 			$scouts[] = $scout;
 		}
 		$result->free();
-		
+
 		return $scouts;
 	}
-	
+
 	/**
 	 * Provides scout data set with specified ID. Throws exception if invalid ID.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer application context.
 	 * @param DbConnection $db DB connection-
 	 * @param I18n $i18n messages context.
@@ -269,81 +269,81 @@ class YouthPlayersDataService {
 		$result = $db->querySelect("*", $websoccer->getConfig("db_prefix") . "_youthscout", "id = %d", $scoutId);
 		$scout = $result->fetch_array();
 		$result->free();
-		
+
 		if (!$scout) {
 			throw new Exception($i18n->getMessage("youthteam_scouting_err_invalidscout"));
 		}
-		
+
 		return $scout;
 	}
-	
+
 	/**
 	 * Provide the timestamp of the last scouting execution by the specified team.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param int $teamId ID of team.
 	 * @return number UNIX timestamp of last scouting. 0 if never executed before.
 	 */
 	public static function getLastScoutingExecutionTime(WebSoccer $websoccer, DbConnection $db, $teamId) {
-		$result = $db->querySelect("scouting_last_execution", $websoccer->getConfig("db_prefix") . "_verein", 
+		$result = $db->querySelect("scouting_last_execution", $websoccer->getConfig("db_prefix") . "_verein",
 				"id = %d", $teamId);
 		$scouted = $result->fetch_array();
 		$result->free();
-		
+
 		if (!$scouted) {
 			return 0;
 		}
-		
+
 		return $scouted["scouting_last_execution"];
 	}
-	
+
 	/**
 	 * Provides a list of country names which are feasable for player generation (i.e. scouting).
 	 * These are the names of the folders containing dummy names.
-	 * 
+	 *
 	 * @return array array of (untranslated) country names which can be used for generating new players.
 	 */
 	public static function getPossibleScoutingCountries() {
 		$iterator = new DirectoryIterator(BASE_FOLDER . "/admin/config/names/");
-		
+
 		$countries = array();
 		while($iterator->valid()) {
 			if ($iterator->isDir() && !$iterator->isDot()) {
 				$countries[] = $iterator->getFilename();
 			}
-			
+
 			$iterator->next();
 		}
-		
+
 		return $countries;
 	}
-	
+
 	/**
 	 * Provides number of open youth match requests.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @return int total number of open requests.
 	 */
 	public static function countMatchRequests(WebSoccer $websoccer, DbConnection $db) {
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthmatch_request";
-	
-	
+
+
 		$result = $db->querySelect("COUNT(*) AS hits", $fromTable, "1=1");
 		$requests = $result->fetch_array();
 		$result->free();
-	
+
 		if ($requests) {
 			return $requests["hits"];
 		}
-	
+
 		return 0;
 	}
-	
+
 	/**
 	 * Provides open match requests.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 * @param int $startIndex Fetch start index.
@@ -351,7 +351,7 @@ class YouthPlayersDataService {
 	 * @return array list of found requests incl. team and user summary.
 	 */
 	public static function getMatchRequests(WebSoccer $websoccer, DbConnection $db, $startIndex, $entries_per_page) {
-	
+
 		$columns = array(
 				"R.id" => "request_id",
 				"R.matchdate" => "matchdate",
@@ -363,15 +363,15 @@ class YouthPlayersDataService {
 				"U.email" => "user_email",
 				"U.picture" => "user_picture"
 		);
-	
+
 		$fromTable = $websoccer->getConfig("db_prefix") . "_youthmatch_request AS R";
 		$fromTable .= " INNER JOIN " . $websoccer->getConfig("db_prefix") . "_verein AS C ON C.id = R.team_id";
 		$fromTable .= " INNER JOIN " . $websoccer->getConfig("db_prefix") . "_user AS U ON U.id = C.user_id";
-		
+
 		$whereCondition = "1=1 ORDER BY R.matchdate ASC";
-	
+
 		$requests = array();
-	
+
 		$limit = $startIndex .",". $entries_per_page;
 		$result = $db->querySelect($columns, $fromTable, $whereCondition, null, $limit);
 		while ($request = $result->fetch_array()) {
@@ -379,13 +379,13 @@ class YouthPlayersDataService {
 			$requests[] = $request;
 		}
 		$result->free();
-	
+
 		return $requests;
 	}
-	
+
 	/**
 	 * Removes open match requests which cannot be approved any more because match would start to later otherwise.
-	 * 
+	 *
 	 * @param WebSoccer $websoccer Application context.
 	 * @param DbConnection $db DB connection.
 	 */
