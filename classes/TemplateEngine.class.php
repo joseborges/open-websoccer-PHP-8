@@ -19,6 +19,22 @@
   If not, see <http://www.gnu.org/licenses/>.
 
 ******************************************************/
+/**
+ * Clear the template-folder for Twig 2.x,
+ * because the Twig clearcache Function doesen´t exits anymore.
+ *
+ * You can use the function delDir for other directory deleting too.
+ *
+ * @author Rolf Joseph
+ */
+function delDir($dir){
+	if(is_dir($dir)){
+		$files=scandir($dir);
+		foreach($files as$file){
+			if($file!="."&&$file!=".."){
+				if(filetype($dir."/".$file)=="dir")delDir($dir."/".$file);
+				else unlink($dir."/".$file);}}
+		rmdir($dir);}}
 define('TEMPLATE_SUBDIR_DEFAULT', 'default');
 define('I18N_GLOBAL_NAME', 'i18n');
 define('ENVIRONMENT_GLOBAL_NAME', 'env');
@@ -66,9 +82,8 @@ class TemplateEngine {
 	 * deletes all cached templates.
 	 */
 	public function clearCache() {
-		if (file_exists(CACHE_FOLDER)) {
-			$this->_environment->clearCacheFiles();
-		}
+		delDir($_SERVER['DOCUMENT_ROOT'].'/cache/templates');
+		
 	}
 
 	/**
